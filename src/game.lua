@@ -32,6 +32,8 @@ end
 function Game:startNewGame()
     self.deck = Deck.new()
     self.deck:shuffle()
+    -- Reset each column to an empty table; cards from the previous game
+    -- must be cleared explicitly here since _init() is not called again.
     for i = 1, C.NUM_COLS do self.columns[i] = {} end
     self.handResults = {}
     self.score       = 0

@@ -202,7 +202,7 @@ local function drawScoringGuide(topY)
         {"Full House",     "25 pts"},
         {"Flush",          "20 pts"},
         {"Straight",       "15 pts"},
-        {"Three of a Kind","10 pts"},
+        {"Three of a Kind", "10 pts"},
         {"Two Pair",        "5 pts"},
         {"One Pair",        "2 pts"},
         {"High Card",       "1 pt"},
