@@ -5,18 +5,17 @@
 
   Rules
   -----
-  • A shuffled 52-card deck is dealt one card at a time.
-  • Tap one of the 5 column buttons at the bottom to place the current card
-    in that column.
-  • Each column holds up to 5 cards, forming a poker hand.
-  • After all 25 card slots are filled the game ends and each column is scored
-    as a standard 5-card poker hand.
-  • Try to maximise your total score across all five hands!
+  • A shuffled deck feeds a visible 5-card hand at the bottom of the screen.
+  • Tap a hand card, then tap one of the 4 columns to place it.
+  • Each column holds up to 4 cards, forming a 4-card poker hand.
+  • After all 16 grid slots are filled the game ends and each column is scored.
+  • Use HELP in-game for the hand reference and quality-hand payouts.
 
   Controls
   --------
-  Touch / tap  – place card / select menu buttons
-  Keyboard 1-5 – place card in column 1-5 (desktop convenience)
+  Touch / tap  – select hand cards / place cards / press buttons
+  Keyboard 1-4 – place selected card in column 1-4 (desktop convenience)
+  H            – toggle hand reference
   R            – restart
   Escape       – return to menu / quit
 
@@ -74,6 +73,25 @@ local function handleTap(sx, sy)
         end
 
     elseif game.state == C.ST_PLAYING then
+        if game.helpOpen then
+            if R.hit(R.helpCloseButton, vx, vy) or not R.hit(R.helpModalBounds, vx, vy) then
+                game:hideHelp()
+            end
+            return
+        end
+
+        if R.hit(R.helpButton, vx, vy) then
+            game:toggleHelp()
+            return
+        end
+
+        for idx, bounds in ipairs(R.handCards or {}) do
+            if R.hit(bounds, vx, vy) then
+                game:setSelectedHand(idx)
+                return
+            end
+        end
+
         for col, btn in ipairs(R.colButtons) do
             if R.hit(btn, vx, vy) then
                 game:placeCard(col)
@@ -101,7 +119,7 @@ function love.touchpressed(_id, x, y, _dx, _dy, _pressure)
 end
 
 function love.keypressed(key)
-    -- Column hotkeys 1-5 (desktop convenience)
+    -- Column hotkeys 1-4 (desktop convenience)
     local colKey = tonumber(key)
     if colKey and colKey >= 1 and colKey <= C.NUM_COLS then
         if game.state == C.ST_PLAYING then
@@ -114,8 +132,12 @@ function love.keypressed(key)
         if game.state == C.ST_PLAYING or game.state == C.ST_GAMEOVER then
             game:startNewGame()
         end
+    elseif key == "h" and game.state == C.ST_PLAYING then
+        game:toggleHelp()
     elseif key == "escape" then
-        if game.state == C.ST_PLAYING then
+        if game.state == C.ST_PLAYING and game.helpOpen then
+            game:hideHelp()
+        elseif game.state == C.ST_PLAYING then
             game.state = C.ST_MENU
         elseif game.state == C.ST_MENU then
             love.event.quit()

@@ -11,15 +11,16 @@ C.VIRT_H = 2340
 
 -- ── Card dimensions (in virtual pixels) ────────────────────────────────────
 -- Standard card ratio is 2.5 : 3.5 = 5 : 7
-C.CARD_W = 200
-C.CARD_H = 280   -- 200 × 1.40
+C.CARD_W = 180
+C.CARD_H = 252   -- 180 × 1.40
 
 -- ── Board layout ────────────────────────────────────────────────────────────
-C.NUM_COLS     = 5
-C.NUM_ROWS     = 5   -- cards per column (hand size)
-C.GRID_MARGIN  = 15  -- left / right margin around the grid
-C.COL_GAP      = 10  -- horizontal gap between columns
-C.ROW_GAP      = 8   -- vertical gap between rows
+C.NUM_COLS          = 4
+C.NUM_ROWS          = 4   -- cards per column (hand size)
+C.VISIBLE_HAND_SIZE = 5
+C.GRID_MARGIN       = 40  -- left / right margin around the grid
+C.COL_GAP           = 18  -- horizontal gap between columns
+C.ROW_GAP           = 12  -- vertical gap between rows
 
 -- ── Colours ─────────────────────────────────────────────────────────────────
 C.COL_BG            = {0.09, 0.40, 0.09}    -- dark green felt
@@ -48,31 +49,51 @@ C.ST_PLAYING  = "playing"
 C.ST_GAMEOVER = "gameover"
 
 -- ── Poker hand ranks (lower index = better) ─────────────────────────────────
-C.H_ROYAL_FLUSH    = 1
-C.H_STRAIGHT_FLUSH = 2
-C.H_FOUR_KIND      = 3
-C.H_FULL_HOUSE     = 4
+C.H_STRAIGHT_FLUSH = 1
+C.H_FOUR_KIND      = 2
+C.H_STRAIGHT       = 3
+C.H_THREE_KIND     = 4
 C.H_FLUSH          = 5
-C.H_STRAIGHT       = 6
-C.H_THREE_KIND     = 7
-C.H_TWO_PAIR       = 8
-C.H_ONE_PAIR       = 9
-C.H_HIGH_CARD      = 10
+C.H_TWO_PAIR       = 6
+C.H_PAIR           = 7
+C.H_NO_HAND        = 8
 
 C.HAND_INFO = {
-    [C.H_ROYAL_FLUSH]    = {name = "Royal Flush",     abbr = "Royal!",    score = 100},
-    [C.H_STRAIGHT_FLUSH] = {name = "Straight Flush",  abbr = "Str.Flush", score = 75},
-    [C.H_FOUR_KIND]      = {name = "Four of a Kind",  abbr = "4-of-Kind", score = 50},
-    [C.H_FULL_HOUSE]     = {name = "Full House",       abbr = "Full Hse",  score = 25},
-    [C.H_FLUSH]          = {name = "Flush",            abbr = "Flush",     score = 20},
-    [C.H_STRAIGHT]       = {name = "Straight",         abbr = "Straight",  score = 15},
-    [C.H_THREE_KIND]     = {name = "Three of a Kind",  abbr = "3-of-Kind", score = 10},
-    [C.H_TWO_PAIR]       = {name = "Two Pair",         abbr = "Two Pair",  score = 5},
-    [C.H_ONE_PAIR]       = {name = "One Pair",         abbr = "One Pair",  score = 2},
-    [C.H_HIGH_CARD]      = {name = "High Card",        abbr = "Hi Card",   score = 1},
+    [C.H_STRAIGHT_FLUSH] = {
+        name = "Straight Flush", abbr = "Str. Flush", score = 450, quality = true,
+        example = "5♥ 6♥ 7♥ 8♥",
+    },
+    [C.H_FOUR_KIND]      = {
+        name = "4 of a Kind", abbr = "4 of Kind", score = 325, quality = true,
+        example = "9♣ 9♦ 9♥ 9♠",
+    },
+    [C.H_STRAIGHT]       = {
+        name = "Straight", abbr = "Straight", score = 180, quality = true,
+        example = "10♣ J♦ Q♥ K♠",
+    },
+    [C.H_THREE_KIND]     = {
+        name = "3 of a Kind", abbr = "3 of Kind", score = 125, quality = true,
+        example = "Q♣ Q♦ Q♠ 4♥",
+    },
+    [C.H_FLUSH]          = {
+        name = "Flush", abbr = "Flush", score = 80,
+        example = "2♠ 6♠ 9♠ K♠",
+    },
+    [C.H_TWO_PAIR]       = {
+        name = "2 Pair", abbr = "2 Pair", score = 60,
+        example = "7♣ 7♦ J♥ J♠",
+    },
+    [C.H_PAIR]           = {
+        name = "Pair", abbr = "Pair", score = 5,
+        example = "A♣ A♥ 5♦ 9♠",
+    },
+    [C.H_NO_HAND]        = {
+        name = "No Hand", abbr = "No Hand", score = 0,
+        example = "2♣ 5♦ 9♥ K♠",
+    },
 }
 
--- Maximum possible score (all Royal Flushes)
-C.MAX_SCORE = C.HAND_INFO[C.H_ROYAL_FLUSH].score * C.NUM_COLS  -- 500
+-- Maximum possible score (all straight flushes)
+C.MAX_SCORE = C.HAND_INFO[C.H_STRAIGHT_FLUSH].score * C.NUM_COLS  -- 1800
 
 return C

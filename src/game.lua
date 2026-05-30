@@ -19,12 +19,15 @@ end
 function Game:_init()
     self.state       = C.ST_MENU
     self.deck        = nil
-    self.columns     = {{}, {}, {}, {}, {}}
+    self.columns     = {{}, {}, {}, {}}
+    self.playerHand  = {}
+    self.selectedHandIndex = 1
     self.currentCard = nil
     self.score       = 0
     self.handResults = {}
     self.moveCount   = 0
-    self.totalMoves  = C.NUM_COLS * C.NUM_ROWS   -- 25
+    self.helpOpen    = false
+    self.totalMoves  = C.NUM_COLS * C.NUM_ROWS
 end
 
 -- ── Public API ────────────────────────────────────────────────────────────────
@@ -38,12 +41,15 @@ function Game:startNewGame()
     self.handResults = {}
     self.score       = 0
     self.moveCount   = 0
+    self.playerHand  = {}
+    self.selectedHandIndex = 1
     self.currentCard = nil
+    self.helpOpen    = false
     self.state       = C.ST_PLAYING
-    self:_dealNext()
+    self:_fillHand()
 end
 
---- Place the current card into column `col` (1-based).
+--- Place the selected hand card into column `col` (1-based).
 --- Returns true on success, false if the column is full.
 function Game:placeCard(col)
     if self.state ~= C.ST_PLAYING then return false end
@@ -51,19 +57,40 @@ function Game:placeCard(col)
     if not self:_canPlace(col) then return false end
 
     table.insert(self.columns[col], self.currentCard)
-    self.currentCard = nil
+    table.remove(self.playerHand, self.selectedHandIndex)
     self.moveCount   = self.moveCount + 1
 
     if self.moveCount >= self.totalMoves or not self:_hasSpace() then
         self:_endGame()
     else
-        self:_dealNext()
+        self:_fillHand()
     end
     return true
 end
 
 function Game:canPlace(col)
     return self:_canPlace(col)
+end
+
+function Game:setSelectedHand(index)
+    if self.state ~= C.ST_PLAYING then return false end
+    if not self.playerHand[index] then return false end
+    self.selectedHandIndex = index
+    self:_syncCurrentCard()
+    return true
+end
+
+function Game:toggleHelp()
+    if self.state ~= C.ST_PLAYING then return end
+    self.helpOpen = not self.helpOpen
+end
+
+function Game:hideHelp()
+    self.helpOpen = false
+end
+
+function Game:cardsRemaining()
+    return (self.deck and self.deck:size() or 0) + #self.playerHand
 end
 
 --- Returns the current hand hint string for a column, or nil.
@@ -97,12 +124,27 @@ function Game:_hasSpace()
     return false
 end
 
-function Game:_dealNext()
-    if self.deck:size() > 0 then
-        self.currentCard = self.deck:deal()
-    else
-        self.currentCard = nil
+function Game:_fillHand()
+    while self.deck:size() > 0 and #self.playerHand < C.VISIBLE_HAND_SIZE do
+        table.insert(self.playerHand, self.deck:deal())
     end
+    self:_syncCurrentCard()
+end
+
+function Game:_syncCurrentCard()
+    if #self.playerHand == 0 then
+        self.selectedHandIndex = 1
+        self.currentCard = nil
+        return
+    end
+
+    if self.selectedHandIndex > #self.playerHand then
+        self.selectedHandIndex = #self.playerHand
+    elseif self.selectedHandIndex < 1 then
+        self.selectedHandIndex = 1
+    end
+
+    self.currentCard = self.playerHand[self.selectedHandIndex]
 end
 
 function Game:_endGame()
@@ -114,7 +156,7 @@ function Game:_endGame()
         if #col == C.NUM_ROWS then
             res = Eval.evaluate(col)
         else
-            res = {rank = 0, name = "Incomplete", abbr = "—", score = 0}
+            res = {rank = 0, name = "Incomplete", abbr = "—", score = 0, quality = false}
         end
         self.handResults[i] = res
         self.score = self.score + res.score
