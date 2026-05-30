@@ -93,7 +93,7 @@ C.HAND_INFO = {
     },
 }
 
--- Maximum possible score (all straight flushes)
+-- Theoretical maximum score if all four columns are straight flushes.
 C.MAX_SCORE = C.HAND_INFO[C.H_STRAIGHT_FLUSH].score * C.NUM_COLS  -- 1800
 
 return C

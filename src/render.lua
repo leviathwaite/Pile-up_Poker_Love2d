@@ -77,6 +77,10 @@ local function centredText(font, text, cx, cy)
     love.graphics.print(text, math.floor(cx - w / 2), math.floor(cy - h / 2))
 end
 
+local function qualitySuffix(info)
+    return info.quality and " ★" or ""
+end
+
 -- ── Decorative felt background ────────────────────────────────────────────────
 
 local function drawFeltStripes()
@@ -223,20 +227,21 @@ local function drawScoringGuide(topY)
     local col1x = 100
     local col2x = 560
     local rowH  = fonts.small:getHeight() + 6
+    local notesY = topY + 78 + #HELP_RANKS * rowH
     for i, rank in ipairs(HELP_RANKS) do
         local info = C.HAND_INFO[rank]
         local ey = topY + 78 + (i - 1) * rowH
         love.graphics.setFont(fonts.small)
         setColor(C.COL_TEXT_DIM)
-        love.graphics.print(info.name .. (info.quality and " ★" or ""), col1x, ey)
+        love.graphics.print(info.name .. qualitySuffix(info), col1x, ey)
         setColor(info.quality and C.COL_GOLD or C.COL_TEXT)
         love.graphics.print(tostring(info.score), col2x, ey)
     end
 
     setColor(C.COL_TEXT_DIM)
     love.graphics.setFont(fonts.hint)
-    love.graphics.print("Order of cards in hand doesn’t matter.", col1x, topY + 78 + #HELP_RANKS * rowH + 12)
-    love.graphics.print("★ indicates a quality hand.", col1x, topY + 78 + #HELP_RANKS * rowH + 48)
+    love.graphics.print("Order of cards in hand doesn’t matter.", col1x, notesY + 12)
+    love.graphics.print("★ indicates a quality hand.", col1x, notesY + 48)
 end
 
 -- ── Header (in-game) ──────────────────────────────────────────────────────────
@@ -261,7 +266,8 @@ local function drawHeader(game)
 
     setColor(C.COL_GOLD)
     local hs = "Best: " .. game.highScore
-    love.graphics.print(hs, C.VIRT_W - fonts.small:getWidth(hs) - 214, 78)
+    local rightInfoInset = HELP_BUTTON_W + HELP_BUTTON_MARGIN + 20
+    love.graphics.print(hs, C.VIRT_W - fonts.small:getWidth(hs) - rightInfoInset, 78)
 
     local bw, bh = HELP_BUTTON_W, HELP_BUTTON_H
     local bx, by = C.VIRT_W - bw - HELP_BUTTON_MARGIN, HELP_BUTTON_Y
@@ -494,7 +500,7 @@ local function drawHelpModal()
 
         setColor(C.COL_TEXT)
         love.graphics.setFont(fonts.small)
-        love.graphics.print(info.name .. (info.quality and " ★" or ""), nameX, rowY - 18)
+        love.graphics.print(info.name .. qualitySuffix(info), nameX, rowY - 18)
 
         setColor(info.quality and C.COL_GOLD or C.COL_TEXT)
         love.graphics.print("$" .. info.score, scoreX, rowY - 18)

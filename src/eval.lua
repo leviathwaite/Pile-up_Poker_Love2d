@@ -74,7 +74,7 @@ end
 
 -- ── Public API ────────────────────────────────────────────────────────────────
 
-local function isStraightDraw(cards)
+local function hasStraightPattern(cards)
     if #cards < 3 then return false end
     local vals = sortedValues(cards)
     for i = 2, #vals do
@@ -152,7 +152,7 @@ function Eval.hint(cards)
         if cards[i].suit ~= s0 then suitMatch = false; break end
     end
     if suitMatch and #cards >= 3 then return "Flush?" end
-    if isStraightDraw(cards) then return "Straight?" end
+    if hasStraightPattern(cards) then return "Straight?" end
 
     return nil
 end
