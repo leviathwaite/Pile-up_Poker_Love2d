@@ -32,26 +32,25 @@ local function isFlush(cards)
     return true
 end
 
-local function isStraight(sortedVals)
-    -- Normal straight
-    local ok = true
-    for i = 2, #sortedVals do
-        if sortedVals[i] ~= sortedVals[i - 1] + 1 then
-            ok = false; break
+local function isSequential(vals)
+    for i = 2, #vals do
+        if vals[i] ~= vals[i - 1] + 1 then
+            return false
         end
     end
-    if ok then return true end
+    return true
+end
+
+local function isStraight(sortedVals)
+    -- Normal straight
+    if isSequential(sortedVals) then return true end
     -- Ace-low: A-2-3-4-5  (ace is 14, treat as 1)
     if sortedVals[#sortedVals] == 14 then
         local aceLow = {}
         for i = 1, #sortedVals - 1 do aceLow[i] = sortedVals[i] end
         table.insert(aceLow, 1)
         table.sort(aceLow)
-        ok = true
-        for i = 2, #aceLow do
-            if aceLow[i] ~= aceLow[i - 1] + 1 then ok = false; break end
-        end
-        if ok then return true end
+        if isSequential(aceLow) then return true end
     end
     return false
 end

@@ -31,6 +31,17 @@ local SYM = {hearts = "♥", diamonds = "♦", clubs = "♣", spades = "♠"}
 
 -- Header height constant (used by both header and grid)
 local HEADER_H = 128
+local HELP_BUTTON_W = 170
+local HELP_BUTTON_H = 72
+local HELP_BUTTON_MARGIN = 24
+local HELP_BUTTON_Y = 48
+local RESERVED_BOTTOM_H = 760
+local HAND_CARD_W = 138
+local HAND_CARD_H = 193
+local HAND_CARD_GAP = 10
+local HELP_MODAL_W = 920
+local HELP_MODAL_H = 1500
+local HELP_MODAL_Y = 220
 local HELP_RANKS = {
     C.H_STRAIGHT_FLUSH,
     C.H_FOUR_KIND,
@@ -252,8 +263,8 @@ local function drawHeader(game)
     local hs = "Best: " .. game.highScore
     love.graphics.print(hs, C.VIRT_W - fonts.small:getWidth(hs) - 214, 78)
 
-    local bw, bh = 170, 72
-    local bx, by = C.VIRT_W - bw - 24, 48
+    local bw, bh = HELP_BUTTON_W, HELP_BUTTON_H
+    local bx, by = C.VIRT_W - bw - HELP_BUTTON_MARGIN, HELP_BUTTON_Y
     setColor(C.COL_BTN)
     rect("fill", bx, by, bw, bh, 18)
     setColor(C.COL_BTN_HOVER)
@@ -281,7 +292,7 @@ local function computeGridMetrics()
     local maxCH  = math.floor(maxCW * 1.4)
     local rh     = C.ROW_GAP
     local gridTop = HEADER_H + 74
-    local reservedBottom = 760
+    local reservedBottom = RESERVED_BOTTOM_H
     local maxGridH = C.VIRT_H - reservedBottom - gridTop
     local ch = math.min(maxCH, math.floor((maxGridH - (rows - 1) * rh) / rows))
     local cw = math.floor(ch / 1.4)
@@ -365,10 +376,10 @@ local function drawFooter(game)
     love.graphics.line(40, ft + 8, C.VIRT_W - 40, ft + 8)
 
     setColor(C.COL_TEXT_DIM)
-    centredText(fonts.small, "Tap a hand card, then tap a column.", C.VIRT_W / 2, ft + 44)
+    centredText(fonts.small, "Select a hand card, then choose a column.", C.VIRT_W / 2, ft + 44)
 
-    local handW, handH = 138, 193
-    local handGap = 10
+    local handW, handH = HAND_CARD_W, HAND_CARD_H
+    local handGap = HAND_CARD_GAP
     local handTotalW = C.VISIBLE_HAND_SIZE * handW + (C.VISIBLE_HAND_SIZE - 1) * handGap
     local handStartX = math.floor((C.VIRT_W - handTotalW) / 2)
     local handY = ft + 76
@@ -456,9 +467,9 @@ local function drawHelpModal()
     love.graphics.setColor(0, 0, 0, 0.68)
     rect("fill", 0, 0, C.VIRT_W, C.VIRT_H)
 
-    local mw, mh = 920, 1500
+    local mw, mh = HELP_MODAL_W, HELP_MODAL_H
     local mx = math.floor((C.VIRT_W - mw) / 2)
-    local my = 220
+    local my = HELP_MODAL_Y
     R.helpModalBounds = {x = mx, y = my, w = mw, h = mh}
 
     setColor({0.06, 0.24, 0.06, 0.98})
