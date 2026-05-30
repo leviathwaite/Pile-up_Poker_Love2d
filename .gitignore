@@ -1,0 +1,12 @@
+# Love2D build artifacts
+*.love
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Kenney card assets (download separately per assets/README.md)
+assets/cards/*.png
+assets/cards/*.svg
