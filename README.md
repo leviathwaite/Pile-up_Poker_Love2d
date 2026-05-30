@@ -9,28 +9,29 @@ built with [Love2D](https://love2d.org/) (version 11.4+).
 
 | Step | Description |
 |------|-------------|
-| 1 | A shuffled 52-card deck is dealt **one card at a time**. |
-| 2 | Tap one of the **5 column buttons** at the bottom to place the current card in that column. |
-| 3 | Each column holds up to **5 cards**, forming a standard poker hand. |
-| 4 | After all 25 card placements are made the game ends. |
-| 5 | Each column is scored as a **5-card poker hand** and totals are summed. |
+| 1 | A shuffled deck feeds a **visible 5-card hand** at the bottom of the screen. |
+| 2 | Tap a card in your hand, then tap one of the **4 column buttons** to place it. |
+| 3 | Each column holds up to **4 cards**, forming a 4-card poker hand. |
+| 4 | After all **16** card placements are made the game ends. |
+| 5 | Each column is scored with the **4-card reference payouts** and totals are summed. |
 
 ### Scoring table
 
 | Hand              | Points |
 |-------------------|--------|
-| Royal Flush       | 100    |
-| Straight Flush    |  75    |
-| Four of a Kind    |  50    |
-| Full House        |  25    |
-| Flush             |  20    |
-| Straight          |  15    |
-| Three of a Kind   |  10    |
-| Two Pair          |   5    |
-| One Pair          |   2    |
-| High Card         |   1    |
+| Straight Flush ★  | 450    |
+| 4 of a Kind ★     | 325    |
+| Straight ★        | 180    |
+| 3 of a Kind ★     | 125    |
+| Flush             |  80    |
+| 2 Pair            |  60    |
+| Pair              |   5    |
+| No Hand           |   0    |
 
-Maximum possible score: **500** (five Royal Flushes).
+Order of cards in hand doesn’t matter.  
+★ indicates a quality hand.
+
+Maximum possible score: **1800** (four Straight Flushes).
 
 ---
 
@@ -38,8 +39,9 @@ Maximum possible score: **500** (five Royal Flushes).
 
 | Input              | Action                          |
 |--------------------|---------------------------------|
-| **Tap / Click**    | Place card / press buttons      |
-| **Keys 1 – 5**     | Place card in column 1-5        |
+| **Tap / Click**    | Select hand cards / place cards / press buttons |
+| **Keys 1 – 4**     | Place selected card in column 1-4 |
+| **H**              | Toggle the hand reference       |
 | **R**              | Restart game                    |
 | **Escape**         | Return to menu / quit           |
 
@@ -92,7 +94,7 @@ Requires Love2D 11.4 or later — download from <https://love2d.org/>.
    ```
 
 The game is designed for the S22 Ultra portrait aspect ratio (≈ 19.3 : 9)
-and uses large touch targets (≥ 200 × 230 virtual-px buttons).
+and uses large touch targets sized for phone play in portrait orientation.
 
 ---
 

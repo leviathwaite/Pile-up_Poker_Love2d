@@ -20,13 +20,38 @@ local _sx, _sy, _ox, _oy = 1, 1, 0, 0
 R.playButton      = nil
 R.playAgainButton = nil
 R.menuButton      = nil
+R.helpButton      = nil
+R.helpCloseButton = nil
+R.helpModalBounds = nil
 R.colButtons      = {}
+R.handCards       = {}
 
 -- Suit unicode symbols
 local SYM = {hearts = "♥", diamonds = "♦", clubs = "♣", spades = "♠"}
 
 -- Header height constant (used by both header and grid)
 local HEADER_H = 128
+local HELP_BUTTON_W = 170
+local HELP_BUTTON_H = 72
+local HELP_BUTTON_MARGIN = 24
+local HELP_BUTTON_Y = 48
+local RESERVED_BOTTOM_H = 760
+local HAND_CARD_W = 138
+local HAND_CARD_H = 193
+local HAND_CARD_GAP = 10
+local HELP_MODAL_W = 920
+local HELP_MODAL_H = 1500
+local HELP_MODAL_Y = 220
+local HELP_RANKS = {
+    C.H_STRAIGHT_FLUSH,
+    C.H_FOUR_KIND,
+    C.H_STRAIGHT,
+    C.H_THREE_KIND,
+    C.H_FLUSH,
+    C.H_TWO_PAIR,
+    C.H_PAIR,
+    C.H_NO_HAND,
+}
 
 -- ── Low-level drawing helpers ─────────────────────────────────────────────────
 
@@ -50,6 +75,10 @@ local function centredText(font, text, cx, cy)
     local w = font:getWidth(text)
     local h = font:getHeight()
     love.graphics.print(text, math.floor(cx - w / 2), math.floor(cy - h / 2))
+end
+
+local function qualitySuffix(info)
+    return info.quality and " ★" or ""
 end
 
 -- ── Decorative felt background ────────────────────────────────────────────────
@@ -193,31 +222,26 @@ end
 
 local function drawScoringGuide(topY)
     setColor(C.COL_TEXT)
-    centredText(fonts.medium, "Scoring", C.VIRT_W / 2, topY + 34)
+    centredText(fonts.medium, "4-Card Scoring", C.VIRT_W / 2, topY + 34)
 
-    local entries = {
-        {"Royal Flush",    "100 pts"},
-        {"Straight Flush", "75 pts"},
-        {"Four of a Kind", "50 pts"},
-        {"Full House",     "25 pts"},
-        {"Flush",          "20 pts"},
-        {"Straight",       "15 pts"},
-        {"Three of a Kind", "10 pts"},
-        {"Two Pair",        "5 pts"},
-        {"One Pair",        "2 pts"},
-        {"High Card",       "1 pt"},
-    }
-    local col1x = 90
-    local col2x = 600
-    local rowH  = fonts.small:getHeight() + 10
-    for i, e in ipairs(entries) do
-        local ey = topY + 82 + (i - 1) * rowH
+    local col1x = 100
+    local col2x = 560
+    local rowH  = fonts.small:getHeight() + 6
+    local notesY = topY + 78 + #HELP_RANKS * rowH
+    for i, rank in ipairs(HELP_RANKS) do
+        local info = C.HAND_INFO[rank]
+        local ey = topY + 78 + (i - 1) * rowH
         love.graphics.setFont(fonts.small)
         setColor(C.COL_TEXT_DIM)
-        love.graphics.print(e[1], col1x, ey)
-        setColor(C.COL_GOLD)
-        love.graphics.print(e[2], col2x, ey)
+        love.graphics.print(info.name .. qualitySuffix(info), col1x, ey)
+        setColor(info.quality and C.COL_GOLD or C.COL_TEXT)
+        love.graphics.print(tostring(info.score), col2x, ey)
     end
+
+    setColor(C.COL_TEXT_DIM)
+    love.graphics.setFont(fonts.hint)
+    love.graphics.print("Order of cards in hand doesn’t matter.", col1x, notesY + 12)
+    love.graphics.print("★ indicates a quality hand.", col1x, notesY + 48)
 end
 
 -- ── Header (in-game) ──────────────────────────────────────────────────────────
@@ -230,20 +254,31 @@ local function drawHeader(game)
     love.graphics.setFont(fonts.large)
     love.graphics.print("Pile-Up Poker", 24, 16)
 
-    setColor(C.COL_TEXT)
-    love.graphics.setFont(fonts.medium)
-    local sc = "Score: " .. game.score
-    love.graphics.print(sc, C.VIRT_W - fonts.medium:getWidth(sc) - 24, 14)
-
     setColor(C.COL_TEXT_DIM)
     love.graphics.setFont(fonts.small)
-    local remaining = (game.deck and game.deck:size() or 0)
-                    + (game.currentCard and 1 or 0)
+    local remaining = game:cardsRemaining()
     love.graphics.print("Cards left: " .. remaining, 24, 78)
+
+    setColor(C.COL_TEXT)
+    love.graphics.setFont(fonts.medium)
+    local sc = "Winnings: $" .. game.score
+    love.graphics.print(sc, C.VIRT_W - fonts.medium:getWidth(sc) - 24, 14)
 
     setColor(C.COL_GOLD)
     local hs = "Best: " .. game.highScore
-    love.graphics.print(hs, C.VIRT_W - fonts.small:getWidth(hs) - 24, 78)
+    local rightInfoInset = HELP_BUTTON_W + HELP_BUTTON_MARGIN + 20
+    love.graphics.print(hs, C.VIRT_W - fonts.small:getWidth(hs) - rightInfoInset, 78)
+
+    local bw, bh = HELP_BUTTON_W, HELP_BUTTON_H
+    local bx, by = C.VIRT_W - bw - HELP_BUTTON_MARGIN, HELP_BUTTON_Y
+    setColor(C.COL_BTN)
+    rect("fill", bx, by, bw, bh, 18)
+    setColor(C.COL_BTN_HOVER)
+    love.graphics.setLineWidth(3)
+    rect("line", bx, by, bw, bh, 18)
+    setColor(C.COL_TEXT)
+    centredText(fonts.small, "HELP", bx + bw / 2, by + bh / 2)
+    R.helpButton = {x = bx, y = by, w = bw, h = bh}
 end
 
 -- ── Grid metrics ──────────────────────────────────────────────────────────────
@@ -259,9 +294,16 @@ local function computeGridMetrics()
     local rows   = C.NUM_ROWS
 
     local totalW = C.VIRT_W - 2 * margin
-    local cw     = math.floor((totalW - (cols - 1) * gap) / cols)
-    local ch     = math.floor(cw * 1.4)
+    local maxCW  = math.floor((totalW - (cols - 1) * gap) / cols)
+    local maxCH  = math.floor(maxCW * 1.4)
     local rh     = C.ROW_GAP
+    local gridTop = HEADER_H + 74
+    local reservedBottom = RESERVED_BOTTOM_H
+    local maxGridH = C.VIRT_H - reservedBottom - gridTop
+    local ch = math.min(maxCH, math.floor((maxGridH - (rows - 1) * rh) / rows))
+    local cw = math.floor(ch / 1.4)
+    local gridW = cols * cw + (cols - 1) * gap
+    local startX = math.floor((C.VIRT_W - gridW) / 2)
 
     GM.cw      = cw
     GM.ch      = ch
@@ -270,13 +312,13 @@ local function computeGridMetrics()
     GM.gap     = gap
     GM.cols    = cols
     GM.rows    = rows
-    GM.gridTop = HEADER_H + 52   -- room above grid for hint labels
-    GM.hintY   = HEADER_H + 10  -- hint label y
+    GM.gridTop = gridTop
+    GM.hintY   = HEADER_H + 18
     GM.gridH   = rows * ch + (rows - 1) * rh
 
     GM.colX = {}
     for c = 1, cols do
-        GM.colX[c] = margin + (c - 1) * (cw + gap)
+        GM.colX[c] = startX + (c - 1) * (cw + gap)
     end
 end
 
@@ -339,27 +381,52 @@ local function drawFooter(game)
     love.graphics.setLineWidth(2)
     love.graphics.line(40, ft + 8, C.VIRT_W - 40, ft + 8)
 
-    -- Current card display
-    if game.currentCard then
-        setColor(C.COL_TEXT_DIM)
-        centredText(fonts.small, "Tap a column to place:", C.VIRT_W / 2, ft + 52)
+    setColor(C.COL_TEXT_DIM)
+    centredText(fonts.small, "Select a hand card, then choose a column.", C.VIRT_W / 2, ft + 44)
 
-        -- Large centre card
-        local cw = math.floor(GM.cw * 1.14)
-        local ch = math.floor(cw * 1.4)
-        local cx = math.floor((C.VIRT_W - cw) / 2)
-        local cy = ft + 78
-        drawCard(game.currentCard, cx, cy, cw, ch)
-    else
-        setColor(C.COL_TEXT_DIM)
-        centredText(fonts.medium, "No more cards", C.VIRT_W / 2, ft + 110)
+    local handW, handH = HAND_CARD_W, HAND_CARD_H
+    local handGap = HAND_CARD_GAP
+    local handTotalW = C.VISIBLE_HAND_SIZE * handW + (C.VISIBLE_HAND_SIZE - 1) * handGap
+    local handStartX = math.floor((C.VIRT_W - handTotalW) / 2)
+    local handY = ft + 76
+
+    R.handCards = {}
+    for idx = 1, C.VISIBLE_HAND_SIZE do
+        local hx = handStartX + (idx - 1) * (handW + handGap)
+        local hy = handY
+        local selected = idx == game.selectedHandIndex and game.playerHand[idx]
+
+        if selected then
+            hy = hy - 26
+            setColor(C.COL_GOLD, 0.30)
+            rect("fill", hx - 8, hy - 8, handW + 16, handH + 16, 18)
+        end
+
+        if game.playerHand[idx] then
+            drawCard(game.playerHand[idx], hx, hy, handW, handH)
+            if selected then
+                setColor(C.COL_GOLD)
+                love.graphics.setLineWidth(4)
+                rect("line", hx - 4, hy - 4, handW + 8, handH + 8, 16)
+            end
+            R.handCards[idx] = {x = hx, y = hy, w = handW, h = handH}
+        else
+            drawEmptySlot(hx, hy, handW, handH)
+        end
     end
 
-    -- Column buttons (5 wide, touch-friendly)
-    local btnAreaH   = 234
-    local btnAreaTop = C.VIRT_H - btnAreaH - 18
-    local btnMargin  = 14
-    local btnGap     = 10
+    if game.currentCard then
+        setColor(C.COL_TEXT)
+        centredText(fonts.hint, "Selected", C.VIRT_W / 2, handY + handH + 28)
+    else
+        setColor(C.COL_TEXT_DIM)
+        centredText(fonts.medium, "No more cards", C.VIRT_W / 2, handY + handH + 24)
+    end
+
+    local btnAreaH   = 170
+    local btnAreaTop = C.VIRT_H - btnAreaH - 34
+    local btnMargin  = 36
+    local btnGap     = 18
     local btnW       = math.floor(
                            (C.VIRT_W - btnMargin * 2 - btnGap * (C.NUM_COLS - 1))
                            / C.NUM_COLS)
@@ -385,7 +452,7 @@ local function drawFooter(game)
 
         -- Column number (large)
         setColor(canPlace and C.COL_TEXT or C.COL_TEXT_DIM)
-        centredText(fonts.xlarge, tostring(col), bx + btnW / 2, by + btnH * 0.40)
+        centredText(fonts.large, tostring(col), bx + btnW / 2, by + btnH * 0.38)
 
         -- Status line
         local cnt = #game.columns[col]
@@ -395,11 +462,72 @@ local function drawFooter(game)
             centredText(fonts.hint, "FULL", bx + btnW / 2, by + btnH * 0.77)
         else
             setColor(C.COL_GOLD)
-            centredText(fonts.hint, cnt .. "/5", bx + btnW / 2, by + btnH * 0.77)
+            centredText(fonts.hint, cnt .. "/4", bx + btnW / 2, by + btnH * 0.77)
         end
 
         R.colButtons[col] = {x = bx, y = by, w = btnW, h = btnH}
     end
+end
+
+local function drawHelpModal()
+    love.graphics.setColor(0, 0, 0, 0.68)
+    rect("fill", 0, 0, C.VIRT_W, C.VIRT_H)
+
+    local mw, mh = HELP_MODAL_W, HELP_MODAL_H
+    local mx = math.floor((C.VIRT_W - mw) / 2)
+    local my = HELP_MODAL_Y
+    R.helpModalBounds = {x = mx, y = my, w = mw, h = mh}
+
+    setColor({0.06, 0.24, 0.06, 0.98})
+    rect("fill", mx, my, mw, mh, 28)
+    setColor(C.COL_GOLD)
+    love.graphics.setLineWidth(4)
+    rect("line", mx, my, mw, mh, 28)
+
+    setColor(C.COL_GOLD)
+    centredText(fonts.large, "Poker Hand Reference", C.VIRT_W / 2, my + 72)
+
+    local nameX = mx + 42
+    local scoreX = mx + 480
+    local exampleX = mx + 620
+    local rowY = my + 144
+    local rowH = 136
+
+    for _, rank in ipairs(HELP_RANKS) do
+        local info = C.HAND_INFO[rank]
+        setColor({1, 1, 1, 0.07})
+        rect("fill", mx + 22, rowY - 38, mw - 44, 102, 16)
+
+        setColor(C.COL_TEXT)
+        love.graphics.setFont(fonts.small)
+        love.graphics.print(info.name .. qualitySuffix(info), nameX, rowY - 18)
+
+        setColor(info.quality and C.COL_GOLD or C.COL_TEXT)
+        love.graphics.print("$" .. info.score, scoreX, rowY - 18)
+
+        setColor(C.COL_TEXT_DIM)
+        love.graphics.setFont(fonts.hint)
+        love.graphics.print(info.example, exampleX, rowY - 10)
+
+        rowY = rowY + rowH
+    end
+
+    setColor(C.COL_TEXT)
+    love.graphics.setFont(fonts.small)
+    love.graphics.printf("Order of cards in hand doesn’t matter.", mx + 40, my + mh - 220, mw - 80, "left")
+    love.graphics.printf("★ indicates a quality hand.", mx + 40, my + mh - 166, mw - 80, "left")
+
+    local bw, bh = 280, 96
+    local bx = math.floor(mx + (mw - bw) / 2)
+    local by = my + mh - 118
+    setColor(C.COL_BTN)
+    rect("fill", bx, by, bw, bh, 22)
+    setColor(C.COL_BTN_HOVER)
+    love.graphics.setLineWidth(3)
+    rect("line", bx, by, bw, bh, 22)
+    setColor(C.COL_TEXT)
+    centredText(fonts.medium, "CLOSE", bx + bw / 2, by + bh / 2)
+    R.helpCloseButton = {x = bx, y = by, w = bw, h = bh}
 end
 
 -- ── Kenney asset loader ───────────────────────────────────────────────────────
@@ -498,9 +626,9 @@ function R.drawMenu(highScore)
 
     -- Description
     local lines = {
-        "Deal cards into 5 columns.",
-        "Each column scores as a poker hand.",
-        "Fill all 5 columns for your best score!",
+        "Build 4-card hands in 4 columns.",
+        "Choose from a visible 5-card hand.",
+        "Tap HELP in-game for the hand reference.",
     }
     local ly = 968
     for _, ln in ipairs(lines) do
@@ -540,6 +668,12 @@ function R.drawGame(game)
     drawHeader(game)
     drawGrid(game)
     drawFooter(game)
+    if game.helpOpen then
+        drawHelpModal()
+    else
+        R.helpCloseButton = nil
+        R.helpModalBounds = nil
+    end
 end
 
 function R.drawGameOver(game)
@@ -569,7 +703,7 @@ function R.drawGameOver(game)
     local colW      = math.floor((C.VIRT_W - 40) / C.NUM_COLS)
     local cardW     = math.floor(colW * 0.80)
     local cardH     = math.floor(cardW * 1.4)
-    local rowStep   = math.floor(cardH * 0.30)  -- overlapping fan
+    local rowStep   = math.floor(cardH * 0.34)
 
     for col = 1, C.NUM_COLS do
         local colX = 20 + (col - 1) * colW
@@ -590,16 +724,14 @@ function R.drawGameOver(game)
 
         -- Hand name + score
         if res then
-            local labelY = stackTop + 5 * rowStep + cardH + 10
+            local labelY = stackTop + C.NUM_ROWS * rowStep + cardH + 10
             local rank   = res.rank or 0
             if rank == 0 then
                 setColor(C.COL_TEXT_DIM)
-            elseif rank <= C.H_STRAIGHT_FLUSH then
+            elseif res.quality then
                 setColor(C.COL_GOLD)
             elseif rank <= C.H_FLUSH then
                 setColor({0.4, 1.0, 0.4})
-            elseif rank <= C.H_THREE_KIND then
-                setColor({0.4, 0.8, 1.0})
             else
                 setColor(C.COL_TEXT_DIM)
             end
